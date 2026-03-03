@@ -456,6 +456,73 @@
             margin-bottom: 8px;
         }
 
+        .captcha-box {
+            border: 2px dashed var(--gray-300);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 16px;
+            background: #f8fbf7;
+        }
+
+        .captcha-label {
+            font-size: 13px;
+            color: var(--gray-600);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .captcha-target {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--white);
+            border: 1px solid var(--gray-300);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--forest-green);
+            margin-bottom: 10px;
+        }
+
+        .captcha-slider {
+            width: 100%;
+        }
+
+        .captcha-status {
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 8px;
+            color: var(--gray-600);
+        }
+
+        .captcha-status.success {
+            color: var(--success);
+        }
+
+        .captcha-status.error {
+            color: var(--danger);
+        }
+
+        .otp-box {
+            border: 1px solid var(--gray-300);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 16px;
+            background: #fff;
+        }
+
+        .otp-row {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .otp-row input {
+            flex: 1;
+            min-width: 0;
+        }
+
         /* ========== DASHBOARD ========== */
         .dashboard {
             padding: 40px 20px;
@@ -1759,6 +1826,17 @@
             }
         }
 
+        @keyframes paymentPopIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -46%) scale(0.94);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
         .fade-in {
             animation: fadeIn 0.5s ease;
         }
@@ -1848,6 +1926,44 @@
 
         .toast.info {
             border-left: 4px solid var(--info);
+        }
+
+        .payment-success-pop {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #f2fff4, #ffffff);
+            border: 2px solid rgba(45, 90, 39, 0.25);
+            border-radius: 18px;
+            padding: 20px 26px;
+            min-width: 280px;
+            max-width: 88vw;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            z-index: 3200;
+            animation: paymentPopIn 0.35s ease;
+        }
+
+        .payment-success-pop i {
+            font-size: 26px;
+            color: var(--success);
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        .payment-success-pop .title {
+            color: var(--forest-green);
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 6px;
+        }
+
+        .payment-success-pop .sub {
+            color: var(--gray-600);
+            font-size: 14px;
+            font-weight: 600;
         }
 
         .contact-container {
@@ -1963,6 +2079,23 @@
                     <label>Password</label>
                     <input type="password" id="loginPassword" placeholder="********" required>
                 </div>
+                <div class="captcha-box">
+                    <div class="captcha-label">Slide and verify to login</div>
+                    <div class="captcha-target"><i class="fas fa-sliders-h"></i> Target: <span id="loginCaptchaTarget">0</span></div>
+                    <input type="range" min="0" max="100" value="0" id="loginCaptchaSlider" class="captcha-slider">
+                    <div class="otp-row" style="margin-top: 10px;">
+                        <button type="button" class="btn btn-outline" style="flex: 1;" onclick="verifySliderCaptcha('login')">Verify Captcha</button>
+                        <button type="button" class="btn btn-secondary" style="padding: 10px 14px;" onclick="resetSliderCaptcha('login')"><i class="fas fa-rotate"></i></button>
+                    </div>
+                    <div id="loginCaptchaStatus" class="captcha-status">Not verified yet.</div>
+                </div>
+                <div id="loginOtpSection" class="otp-box hidden">
+                    <div class="captcha-label" style="margin-bottom: 8px;">Security OTP required after 3 captcha failures</div>
+                    <div class="otp-row">
+                        <input type="text" id="loginOtpCode" placeholder="Enter 6-digit OTP" maxlength="6">
+                        <button type="button" class="btn btn-outline" onclick="sendAuthOtp('login')">Send OTP</button>
+                    </div>
+                </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
@@ -2000,6 +2133,23 @@
                     <div class="form-group">
                         <label>Company Name</label>
                         <input type="text" id="companyName" placeholder="Your Company Ltd.">
+                    </div>
+                </div>
+                <div class="captcha-box">
+                    <div class="captcha-label">Complete slider captcha before OTP</div>
+                    <div class="captcha-target"><i class="fas fa-shield-alt"></i> Target: <span id="signupCaptchaTarget">0</span></div>
+                    <input type="range" min="0" max="100" value="0" id="signupCaptchaSlider" class="captcha-slider">
+                    <div class="otp-row" style="margin-top: 10px;">
+                        <button type="button" class="btn btn-outline" style="flex: 1;" onclick="verifySliderCaptcha('signup')">Verify Captcha</button>
+                        <button type="button" class="btn btn-secondary" style="padding: 10px 14px;" onclick="resetSliderCaptcha('signup')"><i class="fas fa-rotate"></i></button>
+                    </div>
+                    <div id="signupCaptchaStatus" class="captcha-status">Not verified yet.</div>
+                </div>
+                <div id="signupOtpSection" class="otp-box hidden">
+                    <div class="captcha-label" style="margin-bottom: 8px;">Email OTP verification required for signup</div>
+                    <div class="otp-row">
+                        <input type="text" id="signupOtpCode" placeholder="Enter 6-digit OTP" maxlength="6">
+                        <button type="button" class="btn btn-outline" onclick="sendAuthOtp('signup')">Send OTP</button>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
@@ -2555,7 +2705,15 @@
         const TEAM_REVIEW_PIN = '1122';
         const RAZORPAY_KEY_ID = 'rzp_live_SMa9HPWJ6T8RM1';
         const PAYMENT_BACKEND_BASE_URL = 'http://127.0.0.1:8000';
+        const AUTH_BACKEND_BASE_URL = PAYMENT_BACKEND_BASE_URL;
         const PAYMENT_PENDING_TIMEOUT_MS = 5 * 60 * 1000;
+        const CAPTCHA_TOLERANCE = 4;
+        let loginCaptchaTarget = 0;
+        let signupCaptchaTarget = 0;
+        let loginCaptchaPassed = false;
+        let signupCaptchaPassed = false;
+        let loginCaptchaFailCount = 0;
+        let loginOtpRequired = false;
 
         const BIODEGRADABLE_KEYWORDS = [
             'banana', 'apple', 'orange', 'fruit', 'vegetable', 'leaf', 'plant', 'flower',
@@ -2657,6 +2815,7 @@
             initMobileMenu();
             initManualLocationAssist();
             startPaymentStatusTimer();
+            initAuthSecurityUi();
         }
 
         function ensureUserDefaults(user) {
@@ -2677,6 +2836,111 @@
         }
 
         // ========== AUTH FUNCTIONS ==========
+        function randomCaptchaTarget() {
+            return Math.floor(Math.random() * 81) + 10;
+        }
+
+        function setCaptchaStatus(mode, message, type = '') {
+            const el = document.getElementById(`${mode}CaptchaStatus`);
+            if (!el) return;
+            el.textContent = message;
+            el.classList.remove('success', 'error');
+            if (type) el.classList.add(type);
+        }
+
+        function updateLoginOtpVisibility() {
+            const section = document.getElementById('loginOtpSection');
+            if (!section) return;
+            section.classList.toggle('hidden', !loginOtpRequired);
+        }
+
+        function resetSliderCaptcha(mode) {
+            const target = randomCaptchaTarget();
+            if (mode === 'login') {
+                loginCaptchaTarget = target;
+                loginCaptchaPassed = false;
+            } else {
+                signupCaptchaTarget = target;
+                signupCaptchaPassed = false;
+            }
+            const targetEl = document.getElementById(`${mode}CaptchaTarget`);
+            const slider = document.getElementById(`${mode}CaptchaSlider`);
+            if (targetEl) targetEl.textContent = target;
+            if (slider) slider.value = '0';
+            setCaptchaStatus(mode, 'Not verified yet.');
+        }
+
+        function verifySliderCaptcha(mode) {
+            const slider = document.getElementById(`${mode}CaptchaSlider`);
+            if (!slider) return false;
+            const value = Number(slider.value || 0);
+            const target = mode === 'login' ? loginCaptchaTarget : signupCaptchaTarget;
+            const ok = Math.abs(value - target) <= CAPTCHA_TOLERANCE;
+
+            if (mode === 'login') {
+                if (ok) {
+                    loginCaptchaPassed = true;
+                    loginCaptchaFailCount = 0;
+                    setCaptchaStatus('login', 'Captcha verified successfully.', 'success');
+                } else {
+                    loginCaptchaPassed = false;
+                    loginCaptchaFailCount += 1;
+                    setCaptchaStatus('login', `Captcha failed (${loginCaptchaFailCount}/3). Try again.`, 'error');
+                    if (loginCaptchaFailCount >= 3) {
+                        loginOtpRequired = true;
+                        updateLoginOtpVisibility();
+                        showToast('Security mode enabled. OTP is now required for login.', 'info');
+                    }
+                    resetSliderCaptcha('login');
+                }
+            } else {
+                if (ok) {
+                    signupCaptchaPassed = true;
+                    setCaptchaStatus('signup', 'Captcha verified. You can request OTP now.', 'success');
+                    const otpSection = document.getElementById('signupOtpSection');
+                    if (otpSection) otpSection.classList.remove('hidden');
+                } else {
+                    signupCaptchaPassed = false;
+                    setCaptchaStatus('signup', 'Captcha mismatch. Slide closer to target.', 'error');
+                    resetSliderCaptcha('signup');
+                }
+            }
+            return ok;
+        }
+
+        async function sendAuthOtp(mode) {
+            const emailInputId = mode === 'signup' ? 'signupEmail' : 'loginEmail';
+            const email = (document.getElementById(emailInputId)?.value || '').trim().toLowerCase();
+            if (!email) {
+                showToast('Enter email first to receive OTP.', 'error');
+                return;
+            }
+
+            if (mode === 'signup' && !signupCaptchaPassed) {
+                showToast('Please verify signup captcha first.', 'error');
+                return;
+            }
+
+            try {
+                await authRequest('/auth/send-otp', { email, purpose: mode });
+                showToast(`OTP sent to ${email}`, 'success');
+            } catch (error) {
+                showToast(error.message || 'Could not send OTP.', 'error');
+            }
+        }
+
+        function initAuthSecurityUi() {
+            resetSliderCaptcha('login');
+            resetSliderCaptcha('signup');
+            loginCaptchaFailCount = 0;
+            loginOtpRequired = false;
+            loginCaptchaPassed = false;
+            signupCaptchaPassed = false;
+            updateLoginOtpVisibility();
+            const signupOtpSection = document.getElementById('signupOtpSection');
+            if (signupOtpSection) signupOtpSection.classList.add('hidden');
+        }
+
         function switchAuthTab(tab, clickedTab) {
             const tabs = document.querySelectorAll('.auth-tab');
             tabs.forEach(t => t.classList.remove('active'));
@@ -2688,9 +2952,13 @@
             if (tab === 'login') {
                 loginForm.classList.remove('hidden');
                 signupForm.classList.add('hidden');
+                resetSliderCaptcha('login');
             } else {
                 loginForm.classList.add('hidden');
                 signupForm.classList.remove('hidden');
+                resetSliderCaptcha('signup');
+                const otpSection = document.getElementById('signupOtpSection');
+                if (otpSection && !signupCaptchaPassed) otpSection.classList.add('hidden');
             }
         }
 
@@ -2708,67 +2976,97 @@
             }
         }
 
-        function handleLogin(event) {
+        async function authRequest(path, payload) {
+            const response = await fetch(`${AUTH_BACKEND_BASE_URL}${path}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.detail || data.message || 'Request failed.');
+            }
+            return data;
+        }
+
+        async function handleLogin(event) {
             event.preventDefault();
-            const email = document.getElementById('loginEmail').value;
+            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
             const password = document.getElementById('loginPassword').value;
+            const otpCode = (document.getElementById('loginOtpCode')?.value || '').trim();
 
-            // Simple validation (in production, this would be server-side)
-            const users = JSON.parse(localStorage.getItem('ecotrackUsers') || '[]');
-            let user = users.find(u => u.email === email && u.password === password);
+            if (!loginCaptchaPassed) {
+                const passed = verifySliderCaptcha('login');
+                if (!passed) return;
+            }
 
-            if (user) {
+            if (loginOtpRequired && (otpCode.length !== 6 || !/^\d{6}$/.test(otpCode))) {
+                showToast('Enter 6-digit OTP for secure login.', 'error');
+                return;
+            }
+
+            try {
+                const result = await authRequest('/auth/login', {
+                    email,
+                    password,
+                    require_otp: loginOtpRequired,
+                    otp_code: loginOtpRequired ? otpCode : ''
+                });
+                let user = ensureUserDefaults(result.user || {});
                 user = ensureUserDefaults(user);
                 user.lastLoginAt = new Date().toISOString();
                 currentUser = user;
                 upsertCurrentUser(user);
                 localStorage.setItem('ecotrackUser', JSON.stringify(user));
+                loginCaptchaPassed = false;
+                loginCaptchaFailCount = 0;
+                loginOtpRequired = false;
+                const loginOtpInput = document.getElementById('loginOtpCode');
+                if (loginOtpInput) loginOtpInput.value = '';
+                updateLoginOtpVisibility();
+                resetSliderCaptcha('login');
                 showMainApp();
                 showToast('Welcome back!', 'success');
-            } else {
-                showToast('Invalid credentials. Try demo@eco.com / demo123', 'error');
+            } catch (error) {
+                loginCaptchaPassed = false;
+                resetSliderCaptcha('login');
+                showToast(error.message || 'Invalid email or password.', 'error');
             }
         }
 
-        function handleSignup(event) {
+        async function handleSignup(event) {
             event.preventDefault();
-            const name = document.getElementById('signupName').value;
-            const email = document.getElementById('signupEmail').value;
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim().toLowerCase();
             const password = document.getElementById('signupPassword').value;
             const role = document.getElementById('signupRole').value;
-            const company = document.getElementById('companyName').value;
+            const company = document.getElementById('companyName').value.trim();
+            const otpCode = (document.getElementById('signupOtpCode')?.value || '').trim();
 
-            const user = {
-                id: Date.now(),
-                name,
-                email,
-                password,
-                role,
-                company,
-                ecoPoints: 0,
-                totalWaste: 0,
-                co2Saved: 0,
-                virtualTrees: 0,
-                plan: 'freemium',
-                planSince: new Date().toISOString(),
-                planPayments: [],
-                redeemedRewards: [],
-                rewardDeliveries: [],
-                pickupRequests: [],
-                businessData: createDefaultBusinessData(),
-                lastLoginAt: new Date().toISOString(),
-                createdAt: new Date().toISOString()
-            };
+            if (!signupCaptchaPassed) {
+                const passed = verifySliderCaptcha('signup');
+                if (!passed) return;
+            }
+            if (otpCode.length !== 6 || !/^\d{6}$/.test(otpCode)) {
+                showToast('Enter 6-digit OTP sent to your email.', 'error');
+                return;
+            }
 
-            // Store user
-            const users = JSON.parse(localStorage.getItem('ecotrackUsers') || '[]');
-            users.push(user);
-            localStorage.setItem('ecotrackUsers', JSON.stringify(users));
-
-            currentUser = user;
-            localStorage.setItem('ecotrackUser', JSON.stringify(user));
-            showMainApp();
-            showToast('Account created successfully!', 'success');
+            try {
+                const result = await authRequest('/auth/signup', { name, email, password, role, company, otp_code: otpCode });
+                const user = ensureUserDefaults(result.user || {});
+                currentUser = user;
+                upsertCurrentUser(user);
+                localStorage.setItem('ecotrackUser', JSON.stringify(user));
+                const signupOtpInput = document.getElementById('signupOtpCode');
+                if (signupOtpInput) signupOtpInput.value = '';
+                signupCaptchaPassed = false;
+                resetSliderCaptcha('signup');
+                showMainApp();
+                showToast('Account created successfully!', 'success');
+            } catch (error) {
+                showToast(error.message || 'Could not create account.', 'error');
+            }
         }
 
         function logout() {
@@ -4873,6 +5171,25 @@
         }
 
         // ========== UTILITY FUNCTIONS ==========
+        async function syncUserToBackend(user) {
+            if (!user || !user.id || !user.email) return;
+            try {
+                const payload = { ...user };
+                delete payload.password;
+                await fetch(`${AUTH_BACKEND_BASE_URL}/auth/save-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: user.id,
+                        email: user.email,
+                        data: payload
+                    })
+                });
+            } catch (error) {
+                // Keep app functional even if backend sync is temporarily unavailable.
+            }
+        }
+
         function upsertCurrentUser(updatedUser) {
             const users = JSON.parse(localStorage.getItem('ecotrackUsers') || '[]');
             const nextUsers = users.map(user => user.id === updatedUser.id ? updatedUser : user);
@@ -4880,6 +5197,7 @@
                 nextUsers.push(updatedUser);
             }
             localStorage.setItem('ecotrackUsers', JSON.stringify(nextUsers));
+            syncUserToBackend(updatedUser);
         }
 
         function openPremiumModal() {
@@ -5125,6 +5443,38 @@
             persistUserAndRefreshPayments();
         }
 
+        function settleOtherPendingPayments(planType, approvedRecordId) {
+            const list = planType === 'business'
+                ? ((currentUser.businessData && currentUser.businessData.paymentRequests) || [])
+                : (currentUser.planPayments || []).filter(item => item.plan === 'Premium');
+
+            list.forEach(item => {
+                if (Number(item.id) === Number(approvedRecordId)) return;
+                if (item.status !== 'Pending Payment') return;
+                item.status = 'Failed';
+                item.note = 'Auto-failed because another payment for this plan was completed.';
+                item.failedAt = new Date().toISOString();
+            });
+        }
+
+        function hasActivePlanForType(planType) {
+            if (!currentUser) return false;
+            if (planType === 'business') return currentUser.plan === 'business';
+            return currentUser.plan === 'premium' || currentUser.plan === 'business';
+        }
+
+        function showPaymentSuccessPop(planLabel) {
+            const pop = document.createElement('div');
+            pop.className = 'payment-success-pop';
+            pop.innerHTML = `
+                <i class="fas fa-circle-check"></i>
+                <div class="title">Payment successful, eco champ!</div>
+                <div class="sub">${planLabel} is active now. Keep making green moves.</div>
+            `;
+            document.body.appendChild(pop);
+            setTimeout(() => pop.remove(), 3200);
+        }
+
         async function startLivePlanCheckout(planType) {
             if (!currentUser) return;
             if (paymentCheckoutBusy) {
@@ -5191,6 +5541,7 @@
                                 note: 'Live payment successful and verified.',
                                 approvedAt: new Date().toISOString()
                             });
+                            settleOtherPendingPayments(planType, pendingRecordId);
                             if (planType === 'business') {
                                 currentUser.plan = 'business';
                                 closeModal('businessPaymentModal');
@@ -5201,6 +5552,7 @@
                             currentUser.planSince = new Date().toISOString();
                             persistUserAndRefreshPayments();
                             showToast(`${planLabel} plan activated with verified payment.`, 'success');
+                            showPaymentSuccessPop(planLabel);
                         } catch (verifyError) {
                             updateLivePaymentRecord(planType, pendingRecordId, {
                                 status: 'Failed',
@@ -5247,6 +5599,7 @@
             request.status = 'Approved';
             request.note = 'Approved by manual verification team.';
             request.approvedAt = new Date().toISOString();
+            settleOtherPendingPayments('business', requestId);
             currentUser.plan = 'business';
             currentUser.planSince = new Date().toISOString();
             upsertCurrentUser(currentUser);
@@ -5280,6 +5633,7 @@
             request.status = 'Approved';
             request.note = 'Approved by manual verification team.';
             request.approvedAt = new Date().toISOString();
+            settleOtherPendingPayments('premium', requestId);
             if (currentUser.plan !== 'business') {
                 currentUser.plan = 'premium';
                 currentUser.planSince = new Date().toISOString();
@@ -5412,7 +5766,7 @@
                         ${item.status === 'Pending Verification'
                             ? `<button class="btn btn-outline" style="padding: 6px 10px; font-size: 12px; margin-right: 6px;" onclick="reviewPlanPayment('${item.planType}', ${item.id}, 'approve')">Approve</button>
                                <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="reviewPlanPayment('${item.planType}', ${item.id}, 'reject')">Reject</button>`
-                            : (item.status === 'Pending Payment'
+                            : (item.status === 'Pending Payment' && !hasActivePlanForType(item.planType)
                                 ? `<button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; margin-right: 6px;" onclick="retryPlanPayment('${item.planType}')">Still not paid? Pay Now</button>
                                    <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="contactPaymentSupport('${item.planType}', ${item.id})">Contact Support</button>`
                                 : '-')}
