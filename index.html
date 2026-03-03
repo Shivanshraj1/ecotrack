@@ -134,6 +134,49 @@
             transition: var(--transition);
         }
 
+        .eco-ticker {
+            background: linear-gradient(90deg, #1f4a1c, #2d5a27 45%, #3f7a35);
+            color: #ffffff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+            overflow: hidden;
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: geometricPrecision;
+        }
+
+        .eco-ticker-track {
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
+            animation: ecoTickerScroll 42s linear infinite;
+            padding-left: 100%;
+            transform: translate3d(0, 0, 0);
+        }
+
+        .eco-ticker-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            margin-right: 42px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.1px;
+            opacity: 1;
+            text-shadow: 0 0 0 rgba(0, 0, 0, 0.001);
+        }
+
+        .eco-ticker:hover .eco-ticker-track,
+        .eco-ticker:active .eco-ticker-track {
+            animation-play-state: paused;
+        }
+
+        .eco-ticker-item i {
+            color: #ffe9a3;
+            font-size: 12px;
+        }
+
         .nav-content {
             display: flex;
             justify-content: space-between;
@@ -1619,6 +1662,26 @@
                 width: 100%;
                 justify-content: center;
             }
+
+            .eco-ticker {
+                min-height: 34px;
+            }
+
+            .eco-ticker-item {
+                font-size: 12px;
+                margin-right: 28px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .eco-ticker-track {
+                animation: none;
+                padding-left: 18px;
+            }
+
+            .eco-ticker-track[aria-hidden="true"] {
+                display: none;
+            }
         }
 
         @media (max-width: 768px) {
@@ -1667,6 +1730,15 @@
         }
 
         /* ========== ANIMATIONS ========== */
+        @keyframes ecoTickerScroll {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -1825,6 +1897,20 @@
 <body>
     <!-- NAVIGATION -->
     <nav class="navbar hidden" id="mainNav">
+        <div class="eco-ticker" aria-label="EcoTrack motivation banner">
+            <div class="eco-ticker-track">
+                <span class="eco-ticker-item"><i class="fas fa-seedling"></i> Scan smart. Segregate right. Earn eco-points daily.</span>
+                <span class="eco-ticker-item"><i class="fas fa-recycle"></i> EcoTrack turns every responsible scan into a cleaner neighborhood.</span>
+                <span class="eco-ticker-item"><i class="fas fa-leaf"></i> Better waste choices today, healthier lifestyle tomorrow.</span>
+                <span class="eco-ticker-item"><i class="fas fa-hand-holding-heart"></i> Recycle, reward, repeat with AI-powered EcoTrack.</span>
+            </div>
+            <div class="eco-ticker-track" aria-hidden="true">
+                <span class="eco-ticker-item"><i class="fas fa-seedling"></i> Scan smart. Segregate right. Earn eco-points daily.</span>
+                <span class="eco-ticker-item"><i class="fas fa-recycle"></i> EcoTrack turns every responsible scan into a cleaner neighborhood.</span>
+                <span class="eco-ticker-item"><i class="fas fa-leaf"></i> Better waste choices today, healthier lifestyle tomorrow.</span>
+                <span class="eco-ticker-item"><i class="fas fa-hand-holding-heart"></i> Recycle, reward, repeat with AI-powered EcoTrack.</span>
+            </div>
+        </div>
         <div class="nav-content">
             <a href="#" class="logo" onclick="navigateTo('dashboard')">
                 <i class="fas fa-leaf"></i>
@@ -2460,6 +2546,8 @@
         let dynamicNearbyRecyclers = [];
         let nearbyLookupAttempted = false;
         let paymentStatusTimer = null;
+        let paymentCountdownTimer = null;
+        let paymentCheckoutBusy = false;
         const MIN_RULE_CONFIDENCE = 0.38;
         const MIN_DETECTION_SCORE = 0.45;
         const MIN_CLASSIFICATION_CONFIDENCE = 62;
@@ -2467,7 +2555,7 @@
         const TEAM_REVIEW_PIN = '1122';
         const RAZORPAY_KEY_ID = 'rzp_live_SMa9HPWJ6T8RM1';
         const PAYMENT_BACKEND_BASE_URL = 'http://127.0.0.1:8000';
-        const PAYMENT_PENDING_TIMEOUT_MS = 10 * 60 * 1000;
+        const PAYMENT_PENDING_TIMEOUT_MS = 5 * 60 * 1000;
 
         const BIODEGRADABLE_KEYWORDS = [
             'banana', 'apple', 'orange', 'fruit', 'vegetable', 'leaf', 'plant', 'flower',
@@ -4842,6 +4930,52 @@
             expireStalePendingPayments();
         }
 
+        function formatCountdownTime(msLeft) {
+            const safeMs = Math.max(0, Number(msLeft) || 0);
+            const totalSeconds = Math.floor(safeMs / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function updatePaymentCountdowns() {
+            const timers = document.querySelectorAll('[data-payment-deadline-ts]');
+            if (!timers.length) {
+                if (paymentCountdownTimer) {
+                    clearInterval(paymentCountdownTimer);
+                    paymentCountdownTimer = null;
+                }
+                return;
+            }
+
+            const now = Date.now();
+            let deadlineCrossed = false;
+            timers.forEach(el => {
+                const deadlineTs = Number(el.getAttribute('data-payment-deadline-ts'));
+                if (!Number.isFinite(deadlineTs)) {
+                    el.textContent = '--:-- left';
+                    return;
+                }
+                const msLeft = deadlineTs - now;
+                if (msLeft <= 0) {
+                    el.textContent = '00:00 left';
+                    deadlineCrossed = true;
+                    return;
+                }
+                el.textContent = `${formatCountdownTime(msLeft)} left`;
+            });
+
+            if (deadlineCrossed) {
+                expireStalePendingPayments();
+            }
+        }
+
+        function startPaymentCountdownTimer() {
+            if (paymentCountdownTimer) clearInterval(paymentCountdownTimer);
+            paymentCountdownTimer = setInterval(updatePaymentCountdowns, 1000);
+            updatePaymentCountdowns();
+        }
+
         function expireStalePendingPayments() {
             if (!currentUser) return;
             let changed = false;
@@ -4853,7 +4987,7 @@
                 const deadline = new Date(item.deadlineAt).getTime();
                 if (Number.isFinite(deadline) && now > deadline) {
                     item.status = 'Failed';
-                    item.note = 'Payment not completed within 10 minutes.';
+                    item.note = 'Payment not completed within 5 minutes.';
                     item.failedAt = new Date().toISOString();
                     changed = true;
                 }
@@ -4866,7 +5000,7 @@
                 const deadline = new Date(item.deadlineAt).getTime();
                 if (Number.isFinite(deadline) && now > deadline) {
                     item.status = 'Failed';
-                    item.note = 'Payment not completed within 10 minutes.';
+                    item.note = 'Payment not completed within 5 minutes.';
                     item.failedAt = new Date().toISOString();
                     changed = true;
                 }
@@ -4889,7 +5023,7 @@
                 status: 'Pending Payment',
                 submittedAt: new Date().toISOString(),
                 deadlineAt: new Date(Date.now() + PAYMENT_PENDING_TIMEOUT_MS).toISOString(),
-                note: 'Payment initiated. Complete within 10 minutes.'
+                note: 'Payment initiated. Complete within 5 minutes.'
             };
 
             if (planType === 'business') {
@@ -4912,6 +5046,71 @@
             return record.id;
         }
 
+        async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 12000) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    signal: controller.signal,
+                    cache: 'no-store'
+                });
+
+                let payload = null;
+                const contentType = (response.headers.get('content-type') || '').toLowerCase();
+                if (contentType.includes('application/json')) {
+                    payload = await response.json();
+                } else {
+                    const raw = await response.text();
+                    payload = raw ? { message: raw } : null;
+                }
+                return { response, payload };
+            } finally {
+                clearTimeout(timeout);
+            }
+        }
+
+        async function createOrderWithRetry(amountInRupees) {
+            const createOrderUrl = `${PAYMENT_BACKEND_BASE_URL}/create-order`;
+            const warmupUrl = `${PAYMENT_BACKEND_BASE_URL}/`;
+            let lastError = null;
+
+            for (let attempt = 1; attempt <= 3; attempt += 1) {
+                try {
+                    if (attempt === 1) {
+                        // Warm up sleeping backend without blocking flow if this call fails.
+                        fetch(warmupUrl, { method: 'GET', cache: 'no-store' }).catch(() => {});
+                    }
+
+                    const { response, payload } = await fetchJsonWithTimeout(
+                        createOrderUrl,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ amount: amountInRupees })
+                        },
+                        15000
+                    );
+
+                    if (!response.ok || !payload || !payload.id || !payload.amount) {
+                        throw new Error(payload && payload.message ? payload.message : 'Unable to create payment order.');
+                    }
+                    return payload;
+                } catch (error) {
+                    lastError = error;
+                    if (attempt < 3) {
+                        await sleep(1200);
+                        continue;
+                    }
+                }
+            }
+
+            if (lastError && lastError.name === 'AbortError') {
+                throw new Error('Payment server timeout. Please try again.');
+            }
+            throw new Error(lastError && lastError.message ? lastError.message : 'Payment server is not reachable.');
+        }
+
         function updateLivePaymentRecord(planType, recordId, updates) {
             let target = null;
             if (planType === 'business') {
@@ -4928,6 +5127,10 @@
 
         async function startLivePlanCheckout(planType) {
             if (!currentUser) return;
+            if (paymentCheckoutBusy) {
+                showToast('Payment request already in progress. Please wait.', 'info');
+                return;
+            }
             if (planType === 'business' && currentUser.role !== 'business') {
                 showToast('Sign up as Business user to activate Business Pro.', 'info');
                 return;
@@ -4943,16 +5146,9 @@
 
             const amountInRupees = planType === 'business' ? 5000 : 99;
             const planLabel = planType === 'business' ? 'Business Pro' : 'Premium';
+            paymentCheckoutBusy = true;
             try {
-                const orderRes = await fetch(`${PAYMENT_BACKEND_BASE_URL}/create-order`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: amountInRupees })
-                });
-                const order = await orderRes.json();
-                if (!orderRes.ok || !order || !order.id || !order.amount) {
-                    throw new Error('Unable to create payment order.');
-                }
+                const order = await createOrderWithRetry(amountInRupees);
                 const pendingRecordId = createPendingLivePaymentRecord(planType, amountInRupees, order.id);
 
                 const options = {
@@ -5029,6 +5225,8 @@
                 checkout.open();
             } catch (error) {
                 showToast(error.message || 'Could not start live payment checkout.', 'error');
+            } finally {
+                paymentCheckoutBusy = false;
             }
         }
 
@@ -5122,6 +5320,45 @@
             if (planType === 'business' && decision === 'reject') manualRejectBusinessPayment(requestId);
         }
 
+        async function retryPlanPayment(planType) {
+            await startLivePlanCheckout(planType);
+        }
+
+        function contactPaymentSupport(planType, requestId) {
+            if (!currentUser) return;
+
+            let record = null;
+            if (planType === 'business') {
+                const list = (currentUser.businessData && currentUser.businessData.paymentRequests) || [];
+                record = list.find(item => Number(item.id) === Number(requestId));
+            } else {
+                const list = currentUser.planPayments || [];
+                record = list.find(item => Number(item.id) === Number(requestId) && item.plan === 'Premium');
+            }
+            if (!record) {
+                navigateTo('contact');
+                showToast('Contact support for payment help.', 'info');
+                return;
+            }
+
+            const planLabel = planType === 'business' ? 'Business Pro' : 'Premium';
+            const subject = encodeURIComponent(`EcoTrack Payment Support - ${planLabel}`);
+            const body = encodeURIComponent(
+                `Hello EcoTrack Support,\n\n` +
+                `I need help with a payment.\n` +
+                `Plan: ${planLabel}\n` +
+                `Status: ${record.status || '-'}\n` +
+                `Amount: INR ${Number(record.amount || 0).toLocaleString('en-IN')}\n` +
+                `Payment ID: ${record.txnId || '-'}\n` +
+                `Order ID: ${record.orderId || '-'}\n` +
+                `Submitted At: ${record.submittedAt ? new Date(record.submittedAt).toLocaleString() : '-'}\n\n` +
+                `Please assist.\n`
+            );
+            window.location.href = `mailto:shivansh.rajput.bij@gmail.com?subject=${subject}&body=${body}`;
+            navigateTo('contact');
+            showToast('Support email draft opened.', 'info');
+        }
+
         function renderPlanPaymentHistory() {
             const body = document.getElementById('planPaymentHistoryBody');
             if (!body || !currentUser) return;
@@ -5132,6 +5369,7 @@
                 amount: item.amount || 99,
                 status: item.status || 'Approved',
                 submittedAt: item.submittedAt,
+                deadlineAt: item.deadlineAt,
                 detail: `${item.payerName || 'User'} | ${item.method || 'Payment'}${item.txnId ? ` | Txn: ${item.txnId}` : ''}${item.screenshot ? ` | <a href="${item.screenshot}" target="_blank" rel="noopener noreferrer">View Screenshot</a>` : ''}`,
                 note: item.note || ''
             }));
@@ -5142,6 +5380,7 @@
                 amount: item.amount || 5000,
                 status: item.status || 'Pending Verification',
                 submittedAt: item.submittedAt,
+                deadlineAt: item.deadlineAt,
                 detail: `${item.payerName || 'User'} | Txn: ${item.txnId || '-'}${item.screenshot ? ` | <a href="${item.screenshot}" target="_blank" rel="noopener noreferrer">View Screenshot</a>` : ''}`,
                 note: item.note || ''
             }));
@@ -5162,15 +5401,26 @@
                     </td>
                     <td>INR ${Number(item.amount || 0).toLocaleString('en-IN')}</td>
                     <td><span class="badge ${(item.status === 'Approved' || item.status === 'Premium Active') ? 'badge-success' : ((item.status === 'Rejected' || item.status === 'Failed') ? 'badge-danger' : 'badge-warning')}">${item.status}</span></td>
-                    <td>${new Date(item.submittedAt).toLocaleString()}<br><span style="font-size: 12px; color: var(--gray-600);">${item.note || ''}</span></td>
+                    <td>
+                        ${new Date(item.submittedAt).toLocaleString()}<br>
+                        <span style="font-size: 12px; color: var(--gray-600);">${item.note || ''}</span>
+                        ${item.status === 'Pending Payment' && item.deadlineAt
+                            ? `<br><span style="font-size: 12px; color: var(--primary-color); font-weight: 600;" data-payment-deadline-ts="${new Date(item.deadlineAt).getTime()}">--:-- left</span>`
+                            : ''}
+                    </td>
                     <td>
                         ${item.status === 'Pending Verification'
                             ? `<button class="btn btn-outline" style="padding: 6px 10px; font-size: 12px; margin-right: 6px;" onclick="reviewPlanPayment('${item.planType}', ${item.id}, 'approve')">Approve</button>
                                <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="reviewPlanPayment('${item.planType}', ${item.id}, 'reject')">Reject</button>`
-                            : '-'}
+                            : (item.status === 'Pending Payment'
+                                ? `<button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; margin-right: 6px;" onclick="retryPlanPayment('${item.planType}')">Still not paid? Pay Now</button>
+                                   <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="contactPaymentSupport('${item.planType}', ${item.id})">Contact Support</button>`
+                                : '-')}
                     </td>
                 </tr>
             `).join('');
+
+            startPaymentCountdownTimer();
         }
 
         function activateBusinessPlan() {
