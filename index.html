@@ -470,11 +470,25 @@
         .premium-greeting h4 {
             margin-bottom: 4px;
             font-size: 17px;
+            color: #fff5c4;
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+            letter-spacing: 0.2px;
         }
 
         .premium-greeting p {
             opacity: 0.95;
             font-size: 14px;
+            color: #f8ffdf;
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        #premiumGreeting h4 {
+            color: #ffd86b;
+            font-weight: 800;
+        }
+
+        #premiumGreeting h4 i {
+            color: #ffe8a6;
         }
 
         .stats-grid {
@@ -2306,32 +2320,10 @@
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal('premiumModal')"><i class="fas fa-times"></i></button>
             <h2 style="color: var(--forest-green); margin-bottom: 12px;">Premium Plan Payment</h2>
-            <p style="color: var(--gray-600); margin-bottom: 12px;">Pay INR 99 via UPI and upload screenshot for manual verification.</p>
-            <div style="background: #f6fbf3; border: 1px solid #d6e7cf; border-radius: 10px; padding: 10px 12px; margin-bottom: 14px;">
-                <strong>UPI ID:</strong> <span id="premiumUpiId">shivansh2006@sbi</span>
-                <button type="button" class="btn btn-outline" style="margin-top: 8px; width: 100%;" onclick="copyBusinessUpi()">
-                    <i class="fas fa-copy"></i> Copy UPI ID
-                </button>
-            </div>
-            <form onsubmit="purchasePremium(event)">
-                <div class="form-group">
-                    <label>Payer Name</label>
-                    <input type="text" id="premiumPayerName" placeholder="Your full name" required>
-                </div>
-                <div class="form-group">
-                    <label>UPI Transaction ID</label>
-                    <input type="text" id="premiumTxnId" placeholder="Optional but recommended">
-                </div>
-                <div class="form-group">
-                    <label>Upload Payment Screenshot</label>
-                    <input type="file" id="premiumScreenshot" accept="image/*" onchange="handlePremiumPaymentProof(event)" required>
-                    <input type="hidden" id="premiumScreenshotData">
-                </div>
-                <img id="premiumPaymentPreview" alt="Premium payment preview" style="width: 100%; border-radius: 10px; margin-bottom: 12px; display: none;">
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
-                    <i class="fas fa-paper-plane"></i> Submit for Verification
-                </button>
-            </form>
+            <p style="color: var(--gray-600); margin-bottom: 12px;">Pay INR 99 securely using Razorpay live checkout.</p>
+            <button type="button" class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="startLivePlanCheckout('premium')">
+                <i class="fas fa-bolt"></i> Pay Online Instantly
+            </button>
         </div>
     </div>
 
@@ -2339,32 +2331,10 @@
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal('businessPaymentModal')"><i class="fas fa-times"></i></button>
             <h2 style="color: var(--forest-green); margin-bottom: 10px;">Business Pro Payment</h2>
-            <p style="color: var(--gray-600); margin-bottom: 12px;">Pay INR 5,000 using UPI and upload screenshot for manual verification.</p>
-            <div style="background: #f6fbf3; border: 1px solid #d6e7cf; border-radius: 10px; padding: 10px 12px; margin-bottom: 14px;">
-                <strong>UPI ID:</strong> <span id="businessUpiId">shivansh2006@sbi</span>
-                <button type="button" class="btn btn-outline" style="margin-top: 8px; width: 100%;" onclick="copyBusinessUpi()">
-                    <i class="fas fa-copy"></i> Copy UPI ID
-                </button>
-            </div>
-            <form onsubmit="submitBusinessPayment(event)">
-                <div class="form-group">
-                    <label>Payer Name</label>
-                    <input type="text" id="businessPayerName" placeholder="Your full name" required>
-                </div>
-                <div class="form-group">
-                    <label>UPI Transaction ID</label>
-                    <input type="text" id="businessTxnId" placeholder="Optional but recommended">
-                </div>
-                <div class="form-group">
-                    <label>Upload Payment Screenshot</label>
-                    <input type="file" id="businessPaymentScreenshot" accept="image/*" onchange="handleBusinessPaymentProof(event)" required>
-                    <input type="hidden" id="businessPaymentScreenshotData">
-                </div>
-                <img id="businessPaymentPreview" alt="Payment screenshot preview" style="width: 100%; border-radius: 10px; margin-bottom: 12px; display: none;">
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
-                    <i class="fas fa-paper-plane"></i> Submit for Verification
-                </button>
-            </form>
+            <p style="color: var(--gray-600); margin-bottom: 12px;">Pay INR 5,000 securely using Razorpay live checkout.</p>
+            <button type="button" class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="startLivePlanCheckout('business')">
+                <i class="fas fa-bolt"></i> Pay Online Instantly
+            </button>
         </div>
     </div>
 
@@ -2430,6 +2400,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
     <!-- Application JavaScript -->
     <script>
@@ -2457,11 +2428,15 @@
         let recyclerMarkersLayer = null;
         let dynamicNearbyRecyclers = [];
         let nearbyLookupAttempted = false;
+        let paymentStatusTimer = null;
         const MIN_RULE_CONFIDENCE = 0.38;
         const MIN_DETECTION_SCORE = 0.45;
         const MIN_CLASSIFICATION_CONFIDENCE = 62;
         const TARGET_OVERLAP_THRESHOLD = 0.45;
         const TEAM_REVIEW_PIN = '1122';
+        const RAZORPAY_KEY_ID = 'rzp_live_SMa9HPWJ6T8RM1';
+        const PAYMENT_BACKEND_BASE_URL = 'http://127.0.0.1:8000';
+        const PAYMENT_PENDING_TIMEOUT_MS = 10 * 60 * 1000;
 
         const BIODEGRADABLE_KEYWORDS = [
             'banana', 'apple', 'orange', 'fruit', 'vegetable', 'leaf', 'plant', 'flower',
@@ -2562,6 +2537,7 @@
             initRewardDeliveryLiveUpdates();
             initMobileMenu();
             initManualLocationAssist();
+            startPaymentStatusTimer();
         }
 
         function ensureUserDefaults(user) {
@@ -4599,61 +4575,11 @@
             const latest = (currentUser.planPayments || [])
                 .filter(item => item.plan === 'Premium')
                 .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0];
-            if (latest && latest.status === 'Pending Verification') {
-                showToast('Your Premium payment is already pending review.', 'info');
+            if (latest && (latest.status === 'Pending Payment' || latest.status === 'Pending Verification')) {
+                showToast('Your Premium payment is already in progress.', 'info');
                 return;
             }
-            document.getElementById('premiumPayerName').value = currentUser.name || '';
-            document.getElementById('premiumTxnId').value = '';
-            document.getElementById('premiumScreenshot').value = '';
-            document.getElementById('premiumScreenshotData').value = '';
-            const preview = document.getElementById('premiumPaymentPreview');
-            preview.src = '';
-            preview.style.display = 'none';
             document.getElementById('premiumModal').classList.add('active');
-        }
-
-        function handlePremiumPaymentProof(event) {
-            const file = event.target.files[0];
-            const dataInput = document.getElementById('premiumScreenshotData');
-            const preview = document.getElementById('premiumPaymentPreview');
-            if (!file || !dataInput || !preview) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                dataInput.value = e.target.result || '';
-                preview.src = dataInput.value;
-                preview.style.display = dataInput.value ? 'block' : 'none';
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function purchasePremium(event) {
-            event.preventDefault();
-            const payerName = document.getElementById('premiumPayerName').value.trim();
-            const txnId = document.getElementById('premiumTxnId').value.trim();
-            const screenshotData = document.getElementById('premiumScreenshotData').value;
-            if (!payerName || !screenshotData) {
-                showToast('Please add payer name and screenshot.', 'error');
-                return;
-            }
-            currentUser.planPayments = currentUser.planPayments || [];
-            currentUser.planPayments.push({
-                id: Date.now(),
-                plan: 'Premium',
-                amount: 99,
-                method: 'UPI: shivansh2006@sbi',
-                payerName: payerName || currentUser.name || 'User',
-                txnId: txnId || '-',
-                screenshot: screenshotData,
-                status: 'Pending Verification',
-                submittedAt: new Date().toISOString(),
-                note: 'Manual check by our team is required before approval.'
-            });
-            upsertCurrentUser(currentUser);
-            localStorage.setItem('ecotrackUser', JSON.stringify(currentUser));
-            closeModal('premiumModal');
-            updatePricingButtons();
-            showToast('Premium payment submitted. Status is pending manual verification.', 'success');
         }
 
         function hasBusinessFullAccess() {
@@ -4667,86 +4593,230 @@
             return requests.slice().sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())[0];
         }
 
-        function copyBusinessUpi() {
-            const upiId = 'shivansh2006@sbi';
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(upiId).then(() => {
-                    showToast('UPI ID copied.', 'success');
-                }).catch(() => {
-                    showToast(`UPI ID: ${upiId}`, 'info');
+        function isLivePaymentConfigured() {
+            return Boolean(
+                RAZORPAY_KEY_ID &&
+                RAZORPAY_KEY_ID.startsWith('rzp_') &&
+                !RAZORPAY_KEY_ID.includes('REPLACE_WITH_YOUR_KEY')
+            );
+        }
+
+        function persistUserAndRefreshPayments() {
+            upsertCurrentUser(currentUser);
+            localStorage.setItem('ecotrackUser', JSON.stringify(currentUser));
+            updatePricingButtons();
+            updatePremiumGreeting();
+            updateHeaderBadges();
+            renderPlanPaymentHistory();
+            renderBusinessPanel();
+        }
+
+        function startPaymentStatusTimer() {
+            if (paymentStatusTimer) clearInterval(paymentStatusTimer);
+            paymentStatusTimer = setInterval(() => {
+                expireStalePendingPayments();
+            }, 60 * 1000);
+            expireStalePendingPayments();
+        }
+
+        function expireStalePendingPayments() {
+            if (!currentUser) return;
+            let changed = false;
+            const now = Date.now();
+
+            currentUser.planPayments = currentUser.planPayments || [];
+            currentUser.planPayments.forEach(item => {
+                if (item.status !== 'Pending Payment' || !item.deadlineAt) return;
+                const deadline = new Date(item.deadlineAt).getTime();
+                if (Number.isFinite(deadline) && now > deadline) {
+                    item.status = 'Failed';
+                    item.note = 'Payment not completed within 10 minutes.';
+                    item.failedAt = new Date().toISOString();
+                    changed = true;
+                }
+            });
+
+            currentUser.businessData = currentUser.businessData || createDefaultBusinessData();
+            currentUser.businessData.paymentRequests = currentUser.businessData.paymentRequests || [];
+            currentUser.businessData.paymentRequests.forEach(item => {
+                if (item.status !== 'Pending Payment' || !item.deadlineAt) return;
+                const deadline = new Date(item.deadlineAt).getTime();
+                if (Number.isFinite(deadline) && now > deadline) {
+                    item.status = 'Failed';
+                    item.note = 'Payment not completed within 10 minutes.';
+                    item.failedAt = new Date().toISOString();
+                    changed = true;
+                }
+            });
+
+            if (changed) {
+                persistUserAndRefreshPayments();
+            }
+        }
+
+        function createPendingLivePaymentRecord(planType, amountInRupees, orderId) {
+            const record = {
+                id: Date.now(),
+                amount: amountInRupees,
+                payerName: currentUser.name || 'User',
+                txnId: '-',
+                orderId: orderId || '-',
+                signature: '-',
+                screenshot: '',
+                status: 'Pending Payment',
+                submittedAt: new Date().toISOString(),
+                deadlineAt: new Date(Date.now() + PAYMENT_PENDING_TIMEOUT_MS).toISOString(),
+                note: 'Payment initiated. Complete within 10 minutes.'
+            };
+
+            if (planType === 'business') {
+                currentUser.businessData = currentUser.businessData || createDefaultBusinessData();
+                currentUser.businessData.paymentRequests = currentUser.businessData.paymentRequests || [];
+                currentUser.businessData.paymentRequests.push({
+                    ...record,
+                    upiId: 'Razorpay Live'
                 });
             } else {
-                showToast(`UPI ID: ${upiId}`, 'info');
+                currentUser.planPayments = currentUser.planPayments || [];
+                currentUser.planPayments.push({
+                    ...record,
+                    plan: 'Premium',
+                    method: 'Razorpay Live'
+                });
+            }
+
+            persistUserAndRefreshPayments();
+            return record.id;
+        }
+
+        function updateLivePaymentRecord(planType, recordId, updates) {
+            let target = null;
+            if (planType === 'business') {
+                const list = (currentUser.businessData && currentUser.businessData.paymentRequests) || [];
+                target = list.find(item => Number(item.id) === Number(recordId));
+            } else {
+                const list = currentUser.planPayments || [];
+                target = list.find(item => Number(item.id) === Number(recordId) && item.plan === 'Premium');
+            }
+            if (!target) return;
+            Object.assign(target, updates);
+            persistUserAndRefreshPayments();
+        }
+
+        async function startLivePlanCheckout(planType) {
+            if (!currentUser) return;
+            if (planType === 'business' && currentUser.role !== 'business') {
+                showToast('Sign up as Business user to activate Business Pro.', 'info');
+                return;
+            }
+            if (!window.Razorpay) {
+                showToast('Live payment SDK not loaded. Try again in a moment.', 'error');
+                return;
+            }
+            if (!isLivePaymentConfigured()) {
+                showToast('Live payment key is not configured yet. Add your Razorpay Key ID in code.', 'error');
+                return;
+            }
+
+            const amountInRupees = planType === 'business' ? 5000 : 99;
+            const planLabel = planType === 'business' ? 'Business Pro' : 'Premium';
+            try {
+                const orderRes = await fetch(`${PAYMENT_BACKEND_BASE_URL}/create-order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: amountInRupees })
+                });
+                const order = await orderRes.json();
+                if (!orderRes.ok || !order || !order.id || !order.amount) {
+                    throw new Error('Unable to create payment order.');
+                }
+                const pendingRecordId = createPendingLivePaymentRecord(planType, amountInRupees, order.id);
+
+                const options = {
+                    key: RAZORPAY_KEY_ID,
+                    amount: order.amount,
+                    currency: order.currency || 'INR',
+                    order_id: order.id,
+                    name: 'EcoTrack',
+                    description: `${planLabel} Plan`,
+                    prefill: {
+                        name: currentUser.name || '',
+                        email: currentUser.email || '',
+                        contact: ''
+                    },
+                    notes: {
+                        plan: planLabel,
+                        userId: String(currentUser.id || '')
+                    },
+                    theme: { color: '#2D5A27' },
+                    handler: async function(response) {
+                        try {
+                            const verifyRes = await fetch(`${PAYMENT_BACKEND_BASE_URL}/verify-payment`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(response)
+                            });
+                            const verifyData = await verifyRes.json();
+                            if (!verifyRes.ok || !verifyData || !verifyData.success) {
+                                throw new Error('Payment verification failed.');
+                            }
+
+                            const paymentId = response.razorpay_payment_id || '';
+                            const orderId = response.razorpay_order_id || '';
+                            const signature = response.razorpay_signature || '';
+                            updateLivePaymentRecord(planType, pendingRecordId, {
+                                txnId: paymentId || '-',
+                                orderId: orderId || '-',
+                                signature: signature || '-',
+                                status: 'Approved',
+                                note: 'Live payment successful and verified.',
+                                approvedAt: new Date().toISOString()
+                            });
+                            if (planType === 'business') {
+                                currentUser.plan = 'business';
+                                closeModal('businessPaymentModal');
+                            } else {
+                                if (currentUser.plan !== 'business') currentUser.plan = 'premium';
+                                closeModal('premiumModal');
+                            }
+                            currentUser.planSince = new Date().toISOString();
+                            persistUserAndRefreshPayments();
+                            showToast(`${planLabel} plan activated with verified payment.`, 'success');
+                        } catch (verifyError) {
+                            updateLivePaymentRecord(planType, pendingRecordId, {
+                                status: 'Failed',
+                                note: verifyError.message || 'Payment verification failed.',
+                                failedAt: new Date().toISOString()
+                            });
+                            showToast(verifyError.message || 'Payment verification failed.', 'error');
+                        }
+                    }
+                };
+
+                const checkout = new Razorpay(options);
+                checkout.on('payment.failed', function(resp) {
+                    const reason = resp && resp.error && resp.error.description ? resp.error.description : 'Payment failed.';
+                    updateLivePaymentRecord(planType, pendingRecordId, {
+                        status: 'Failed',
+                        note: reason,
+                        failedAt: new Date().toISOString()
+                    });
+                    showToast(reason, 'error');
+                });
+                checkout.open();
+            } catch (error) {
+                showToast(error.message || 'Could not start live payment checkout.', 'error');
             }
         }
 
         function openBusinessPaymentModal() {
             if (!currentUser) return;
             const latest = getLatestBusinessPaymentRequest();
-            if (latest && latest.status === 'Pending Verification') {
-                showToast('Your payment is already pending review.', 'info');
+            if (latest && (latest.status === 'Pending Payment' || latest.status === 'Pending Verification')) {
+                showToast('Your Business Pro payment is already in progress.', 'info');
                 return;
             }
-            document.getElementById('businessPayerName').value = currentUser.name || '';
-            document.getElementById('businessTxnId').value = '';
-            document.getElementById('businessPaymentScreenshot').value = '';
-            document.getElementById('businessPaymentScreenshotData').value = '';
-            const preview = document.getElementById('businessPaymentPreview');
-            preview.src = '';
-            preview.style.display = 'none';
             document.getElementById('businessPaymentModal').classList.add('active');
-        }
-
-        function handleBusinessPaymentProof(event) {
-            const file = event.target.files[0];
-            const dataInput = document.getElementById('businessPaymentScreenshotData');
-            const preview = document.getElementById('businessPaymentPreview');
-            if (!file || !dataInput || !preview) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                dataInput.value = e.target.result || '';
-                preview.src = dataInput.value;
-                preview.style.display = dataInput.value ? 'block' : 'none';
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function submitBusinessPayment(event) {
-            event.preventDefault();
-            if (!currentUser || currentUser.role !== 'business') {
-                showToast('Business account required.', 'error');
-                return;
-            }
-
-            const payerName = document.getElementById('businessPayerName').value.trim();
-            const txnId = document.getElementById('businessTxnId').value.trim();
-            const screenshotData = document.getElementById('businessPaymentScreenshotData').value;
-            if (!payerName || !screenshotData) {
-                showToast('Please add payer name and screenshot.', 'error');
-                return;
-            }
-
-            currentUser.businessData = currentUser.businessData || createDefaultBusinessData();
-            currentUser.businessData.paymentRequests = currentUser.businessData.paymentRequests || [];
-            currentUser.businessData.paymentRequests.push({
-                id: Date.now(),
-                amount: 5000,
-                upiId: 'shivansh2006@sbi',
-                payerName,
-                txnId: txnId || '-',
-                screenshot: screenshotData,
-                status: 'Pending Verification',
-                submittedAt: new Date().toISOString(),
-                note: 'Manual check by our team is required before approval.'
-            });
-
-            upsertCurrentUser(currentUser);
-            localStorage.setItem('ecotrackUser', JSON.stringify(currentUser));
-            closeModal('businessPaymentModal');
-            updatePricingButtons();
-            renderPlanPaymentHistory();
-            showToast('Payment submitted. Status is pending until manual team approval.', 'success');
         }
 
         function manualApproveBusinessPayment(requestId) {
@@ -4868,7 +4938,7 @@
                         <span style="font-size: 12px; color: var(--gray-600);">${item.detail || '-'}</span>
                     </td>
                     <td>INR ${Number(item.amount || 0).toLocaleString('en-IN')}</td>
-                    <td><span class="badge ${(item.status === 'Approved' || item.status === 'Premium Active') ? 'badge-success' : (item.status === 'Rejected' ? 'badge-danger' : 'badge-warning')}">${item.status}</span></td>
+                    <td><span class="badge ${(item.status === 'Approved' || item.status === 'Premium Active') ? 'badge-success' : ((item.status === 'Rejected' || item.status === 'Failed') ? 'badge-danger' : 'badge-warning')}">${item.status}</span></td>
                     <td>${new Date(item.submittedAt).toLocaleString()}<br><span style="font-size: 12px; color: var(--gray-600);">${item.note || ''}</span></td>
                     <td>
                         ${item.status === 'Pending Verification'
@@ -4907,6 +4977,11 @@
                     btn.classList.remove('btn-primary');
                     btn.classList.add('btn-secondary');
                     btn.disabled = true;
+                } else if (latestPremiumPayment && latestPremiumPayment.status === 'Pending Payment') {
+                    btn.textContent = 'Payment In Progress';
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-secondary');
+                    btn.disabled = true;
                 } else {
                     btn.innerHTML = 'Upgrade Now';
                     btn.classList.remove('btn-secondary');
@@ -4925,6 +5000,11 @@
                     businessBtn.disabled = true;
                 } else if (latestBusinessPayment && latestBusinessPayment.status === 'Pending Verification') {
                     businessBtn.textContent = 'Payment Pending Review';
+                    businessBtn.classList.remove('btn-primary');
+                    businessBtn.classList.add('btn-secondary');
+                    businessBtn.disabled = true;
+                } else if (latestBusinessPayment && latestBusinessPayment.status === 'Pending Payment') {
+                    businessBtn.textContent = 'Payment In Progress';
                     businessBtn.classList.remove('btn-primary');
                     businessBtn.classList.add('btn-secondary');
                     businessBtn.disabled = true;
