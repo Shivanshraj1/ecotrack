@@ -2728,9 +2728,14 @@
         const TARGET_OVERLAP_THRESHOLD = 0.45;
         const TEAM_REVIEW_PIN = '1122';
         const RAZORPAY_KEY_ID = 'rzp_live_SMa9HPWJ6T8RM1';
-        const PAYMENT_BACKEND_BASE_URL = 'http://127.0.0.1:8000';
+        const DEFAULT_BACKEND_BASE_URL = 'https://ecotrack-1-116g.onrender.com';
+        const PAYMENT_BACKEND_BASE_URL = DEFAULT_BACKEND_BASE_URL;
         const AUTH_BACKEND_BASE_URL = PAYMENT_BACKEND_BASE_URL;
         let activeBackendBaseUrl = (localStorage.getItem('ecotrackBackendUrl') || AUTH_BACKEND_BASE_URL || '').trim();
+        if (/localhost|127\.0\.0\.1/i.test(activeBackendBaseUrl)) {
+            activeBackendBaseUrl = DEFAULT_BACKEND_BASE_URL;
+            localStorage.setItem('ecotrackBackendUrl', DEFAULT_BACKEND_BASE_URL);
+        }
         const PAYMENT_PENDING_TIMEOUT_MS = 5 * 60 * 1000;
         let loginCaptchaPassed = false;
         let signupCaptchaPassed = false;
@@ -3042,23 +3047,21 @@
             return false;
         }
 
+        function isDisallowedBackendUrl(url) {
+            return /localhost|127\.0\.0\.1/i.test((url || '').trim());
+        }
+
         function getBackendCandidates() {
             const fromWindow = (window.ECOTRACK_BACKEND_URL || '').trim();
             const fromStorage = (localStorage.getItem('ecotrackBackendUrl') || '').trim();
-            const host = window.location.hostname;
-            const sameHostHttp = host ? `http://${host}:8000` : '';
-            const sameHostHttps = host ? `https://${host}:8000` : '';
             const seed = [
                 activeBackendBaseUrl,
                 fromWindow,
                 fromStorage,
-                sameHostHttp,
-                sameHostHttps,
                 AUTH_BACKEND_BASE_URL,
                 PAYMENT_BACKEND_BASE_URL,
-                'http://localhost:8000',
-                'http://127.0.0.1:8000'
-            ].filter(Boolean);
+                DEFAULT_BACKEND_BASE_URL
+            ].filter(Boolean).filter(url => !isDisallowedBackendUrl(url));
             return [...new Set(seed)];
         }
 
@@ -3079,9 +3082,9 @@
             }
 
             if (lastError && lastError.name === 'AbortError') {
-                throw new Error('Backend timeout. Please ensure backend is running on port 8000.');
+                throw new Error('Backend timeout. Please try again in a few seconds.');
             }
-            throw new Error('Backend not reachable. Start backend: uvicorn backend.app:app --reload --port 8000');
+            throw new Error('Backend not reachable. Please check internet or backend deployment status.');
         }
 
         function initAuthSecurityUi() {
